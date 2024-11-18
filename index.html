@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web-GIS with GeoServer and Leaflet</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+        integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Custom CSS -->
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: calc(100vh - 56px);
+        }
+
+        /* Legend */
+        #legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            max-width: 160px;
+        }
+
+        #legend h4 {
+            margin: 0;
+            font-size: 14px;
+            text-align: center;
+            border-bottom: 1px solid #ccc;
+        }
+
+        /* Layer Control */
+        #layer-control-container {
+            position: absolute;
+            top: 66px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 5px 10px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            width: 200px;
+        }
+
+        #layer-control-container h4 {
+            margin: 0;
+            font-size: 13px;
+            text-align: center;
+            border-bottom: 1px solid #ccc;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fa-solid fa-map-location-dot"></i> Kabupaten Sleman</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="http://geoportal.slemankab.go.id/" target="_blank"><i
+                                class="fa-solid fa-layer-group"></i> Sumber Data</a>
+                    </li>
+                   
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Map Container -->
+    
+    <div id="map"></div>
+
+    <!-- Legend -->
+   <!-- Legend -->
+   <div id="legend">
+    <h4>Legenda</h4>
+    <div style="overflow-y: auto; max-height: 100px;">
+        <img src="http://localhost:8080/geoserver/pg_web/wms?REQUEST=GetLegendGraphic&FORMAT=image/png&LAYER=pg_web:Sleman"
+            alt="Legenda Batas Administrasi Desa" />
+    </div>
+</div>
+
+    
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-pF1xSYm1eXcFsbu2JnuC53npG9hDq5gH1Jbmdw5s71rsQ96z7GrzF5g0M8KscERn"
+        crossorigin="anonymous"></script>
+    <!-- Leaflet GeoServer request library -->
+    <script src="lib/L.Geoserver.js"></script>
+
+    <script>
+        // Initialize map
+        var map = L.map("map").setView([-7.680559783950118, 110.39074107194598], 10);
+
+        // Base layer
+        var osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }).addTo(map);
+
+        // Overlay layers
+        var batasAdministrasi = L.tileLayer.wms("http://localhost:8080/geoserver/pg_web/wms", {
+            layers: "pg_web:Sleman",
+            format: "image/png",
+            transparent: true,
+            attribution: "GeoServer WMS Layer",
+        }).addTo(map);
+
+        var jalan = L.tileLayer.wms("https://geoportal.slemankab.go.id/geoserver/wms", {
+            layers: "geonode:jalan_kabupaten_sleman_2023",
+            format: "image/png",
+            transparent: true,
+            attribution: "GeoPortal Sleman WMS Layer - Jalan"
+        });
+
+        // Layer controls
+        
+        var baseMaps = { "OpenStreetMap": osm };
+        var overlayMaps = { "Batas Administrasi Desa": batasAdministrasi, "Jalan": jalan };
+
+        var layerControl = L.control.layers(baseMaps, overlayMaps, { collapsed: false });
+        layerControl.addTo(map);
+
+        document.getElementById("layer-control-content").appendChild(layerControl.getContainer());
+    </script>
+</body>
+
+</html>
